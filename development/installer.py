@@ -72,8 +72,8 @@ def get_args_parser():
         "--frappe-branch",
         action="store",
         type=str,
-        help="frappe repo to use, default: version-14",  # noqa: E501
-        default="version-14",
+        help="frappe repo to use, default: version-15",  # noqa: E501
+        default="version-15",
     )
     parser.add_argument(
         "-p",
@@ -96,6 +96,14 @@ def get_args_parser():
         "--verbose",
         action="store_true",
         help="verbose output",  # noqa: E501
+    )
+    parser.add_argument(
+        "-a",
+        "--admin-password",
+        action="store",
+        type=str,
+        help="admin password for site, default: admin",  # noqa: E501
+        default="admin",
     )
     return parser
 
@@ -156,14 +164,17 @@ def init_bench_if_not_exist(args):
             ],
             cwd=os.getcwd() + "/" + args.bench_name,
         )
-        cprint("Set redis_socketio to redis://redis-socketio:6379", level=3)
+        cprint(
+            "Set redis_socketio to redis://redis-queue:6379 for backward compatibility",  # noqa: E501
+            level=3,
+        )
         subprocess.call(
             [
                 "bench",
                 "set-config",
                 "-g",
                 "redis_socketio",
-                "redis://redis-socketio:6379",
+                "redis://redis-queue:6379",
             ],
             cwd=os.getcwd() + "/" + args.bench_name,
         )
@@ -182,7 +193,7 @@ def create_site_in_bench(args):
         "new-site",
         "--no-mariadb-socket",
         "--mariadb-root-password=123",
-        "--admin-password=admin",
+        f"--admin-password={args.admin_password}",
     ]
     apps = os.listdir(f"{os.getcwd()}/{args.bench_name}/apps")
     apps.remove("frappe")
@@ -191,6 +202,7 @@ def create_site_in_bench(args):
 
     new_site_cmd.append(args.site_name)
 
+    cprint(f"Creating Site {args.site_name} ...", level=2)
     subprocess.call(
         new_site_cmd,
         cwd=os.getcwd() + "/" + args.bench_name,
